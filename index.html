@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SevenDrip Sunglass Giveaway — Raffle Spinner</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Ambient background particles -->
+    <div class="bg-particles" id="bgParticles"></div>
+
+    <div class="app-container">
+        <!-- Header / Branding -->
+        <header class="header">
+            <div class="brand">
+                <img src="sevendrip.jpg" alt="SevenDrip Logo" class="brand-logo">
+            </div>
+            <div class="header-text">
+                <h1 class="title">Sunglass Giveaway</h1>
+                <p class="subtitle">Spin the wheel. Win the drip. 🕶️</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Panel: Input -->
+            <section class="panel input-panel" id="inputPanel">
+                <div class="panel-header">
+                    <span class="panel-icon">👥</span>
+                    <h2>Participants</h2>
+                    <span class="participant-count" id="participantCount">0</span>
+                </div>
+                <textarea
+                    id="namesInput"
+                    class="names-input"
+                    placeholder="Paste participant names here&#10;(one name per line)&#10;&#10;Example:&#10;John Doe&#10;Jane Smith&#10;Alex Johnson&#10;..."
+                    spellcheck="false"
+                ></textarea>
+                <div class="input-actions">
+                    <button class="btn btn-secondary" id="clearBtn" title="Clear all names">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                        Clear
+                    </button>
+                    <button class="btn btn-primary" id="loadBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+                        Load Spinner
+                    </button>
+                </div>
+            </section>
+
+            <!-- Right Panel: Spinner -->
+            <section class="panel spinner-panel">
+                <div class="spinner-wrapper" id="spinnerWrapper">
+                    <!-- Empty state -->
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-icon">🎰</div>
+                        <p>Paste names & click <strong>Load Spinner</strong> to begin</p>
+                    </div>
+
+                    <!-- Spinner Canvas Area -->
+                    <div class="spinner-container" id="spinnerContainer" style="display:none;">
+                        <div class="wheel-outer">
+                            <div class="wheel-pointer">
+                                <svg width="36" height="40" viewBox="0 0 36 40">
+                                    <polygon points="18,40 0,0 36,0" fill="#1a1a2e" stroke="#e94560" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <canvas id="wheelCanvas" width="500" height="500"></canvas>
+                            <div class="wheel-center">
+                                <img src="sevendrip.jpg" alt="SD" class="wheel-center-logo">
+                            </div>
+                        </div>
+
+                        <button class="spin-btn" id="spinBtn">
+                            <span class="spin-btn-text">SPIN</span>
+                            <span class="spin-btn-subtitle">Click to draw a winner</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Winner Modal -->
+        <div class="modal-overlay" id="winnerModal">
+            <div class="modal">
+                <div class="confetti-container" id="confettiContainer"></div>
+                <div class="modal-content">
+                    <div class="trophy">🏆</div>
+                    <h2 class="modal-title">We Have a Winner!</h2>
+                    <div class="winner-name" id="winnerName"></div>
+                    <p class="winner-subtitle">Congratulations! You've won the SevenDrip Sunglass Giveaway! 🕶️</p>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" id="spinAgainBtn">Spin Again</button>
+                        <button class="btn btn-primary" id="closeModalBtn">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2026 SevenDrip — Style Your Story</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
