@@ -21,24 +21,44 @@
     const confettiContainer = document.getElementById('confettiContainer');
     const bgParticles = document.getElementById('bgParticles');
 
+    // --- HiDPI Canvas Setup ---
+    const dpr = window.devicePixelRatio || 1;
+    const DISPLAY_SIZE = 500;
+    const CANVAS_SIZE = DISPLAY_SIZE * dpr;
+    wheelCanvas.width = CANVAS_SIZE;
+    wheelCanvas.height = CANVAS_SIZE;
+
     const ctx = wheelCanvas.getContext('2d');
-    const CANVAS_SIZE = 500;
-    const CENTER = CANVAS_SIZE / 2;
+    ctx.scale(dpr, dpr);
+
+    const CENTER = DISPLAY_SIZE / 2;
     const RADIUS = 230;
 
     // --- State ---
     let participants = [];
     let currentAngle = 0;
     let isSpinning = false;
-    let tickAudio = null;
+
+    // --- Shared AudioContext (reused to avoid GC jank) ---
+    let sharedAudioCtx = null;
+    function getAudioCtx() {
+        if (!sharedAudioCtx) {
+            try {
+                sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                // Audio not supported
+            }
+        }
+        return sharedAudioCtx;
+    }
 
     // --- Color Palette for Wheel Segments ---
     const COLORS = [
         '#e94560', '#16213e', '#0f3460', '#533483',
-        '#e94560', '#1a1a2e', '#2d3a8c', '#6a0572',
-        '#c0392b', '#2c3e50', '#8e44ad', '#2980b9',
-        '#d35400', '#1abc9c', '#e74c3c', '#3498db',
-        '#9b59b6', '#e67e22', '#1abc9c', '#34495e',
+        '#c0392b', '#1a1a2e', '#2d3a8c', '#6a0572',
+        '#d35400', '#2c3e50', '#8e44ad', '#2980b9',
+        '#e74c3c', '#1abc9c', '#9b59b6', '#3498db',
+        '#e67e22', '#34495e', '#27ae60', '#8e44ad',
     ];
 
     // --- Initialize Background Particles ---
@@ -77,7 +97,7 @@
 
         const arcSize = (2 * Math.PI) / numSegments;
 
-        ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        ctx.clearRect(0, 0, DISPLAY_SIZE, DISPLAY_SIZE);
         ctx.save();
         ctx.translate(CENTER, CENTER);
         ctx.rotate(angle);
@@ -175,10 +195,11 @@
         drawWheel(currentAngle);
     }
 
-    // --- Create Tick Sound via Web Audio API ---
+    // --- Create Tick Sound (reuses shared AudioContext) ---
     function createTickSound() {
+        const audioCtx = getAudioCtx();
+        if (!audioCtx) return;
         try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
 
@@ -187,15 +208,15 @@
 
             oscillator.type = 'sine';
             oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.05);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.04);
 
-            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
 
             oscillator.start(audioCtx.currentTime);
-            oscillator.stop(audioCtx.currentTime + 0.05);
+            oscillator.stop(audioCtx.currentTime + 0.04);
         } catch (e) {
-            // Audio not supported, silently continue
+            // Audio error, silently continue
         }
     }
 
@@ -204,14 +225,30 @@
         const numSegments = participants.length;
         const arcSize = (2 * Math.PI) / numSegments;
 
-        // The pointer is at the top (–π/2 or 3π/2).
-        // Normalize to find which segment is at the pointer.
+        // The pointer is at the top (3π/2).
         const pointerAngle = (3 * Math.PI / 2);
         let normalizedAngle = (pointerAngle - angle) % (2 * Math.PI);
         if (normalizedAngle < 0) normalizedAngle += 2 * Math.PI;
 
         const index = Math.floor(normalizedAngle / arcSize) % numSegments;
         return index;
+    }
+
+    // --- Ultra-smooth Easing Function ---
+    // Combination of high-order polynomial ease-out for buttery deceleration
+    function smoothEaseOut(t) {
+        // Quintic ease-out: very smooth deceleration curve
+        // Blended with a slight overshoot at the end for realism
+        const p = 1 - t;
+        const base = 1 - p * p * p * p * p; // ease-out quint
+
+        // Add a tiny elastic settle near the end for natural feel
+        if (t > 0.85) {
+            const tail = (t - 0.85) / 0.15; // 0..1 in the last 15%
+            const settle = Math.sin(tail * Math.PI) * 0.002 * (1 - tail);
+            return base + settle;
+        }
+        return base;
     }
 
     // --- Spin the Wheel ---
@@ -224,24 +261,29 @@
         spinBtn.querySelector('.spin-btn-subtitle').textContent = 'Good luck!';
         spinnerContainer.parentElement.classList.add('spinning');
 
+        // Resume AudioContext if suspended (browser autoplay policy)
+        const audioCtx = getAudioCtx();
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
         // Calculate spin parameters
-        const totalRotations = 10 + Math.random() * 5; // 10-15 full rotations
+        const totalRotations = 12 + Math.random() * 5; // 12-17 full rotations
         const totalAngle = totalRotations * 2 * Math.PI + Math.random() * 2 * Math.PI;
-        const duration = 5000 + Math.random() * 2000; // 5-7 seconds
+        const duration = 6000 + Math.random() * 2000; // 6-8 seconds for smoother feel
         const startTime = performance.now();
         const startAngle = currentAngle;
 
         // Track segment changes for tick sound
         let lastSegmentIndex = -1;
 
-        function easeOutCubic(t) {
-            return 1 - Math.pow(1 - t, 4);
-        }
+        // Cache pointer element
+        const pointer = document.querySelector('.wheel-pointer');
 
         function animate(now) {
             const elapsed = now - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            const easedProgress = easeOutCubic(progress);
+            const easedProgress = smoothEaseOut(progress);
 
             currentAngle = startAngle + totalAngle * easedProgress;
             drawWheel(currentAngle);
@@ -250,13 +292,13 @@
             const currentSegment = getWinnerIndex(currentAngle);
             if (currentSegment !== lastSegmentIndex) {
                 lastSegmentIndex = currentSegment;
-                if (progress < 0.9) {
+                if (progress < 0.92) {
                     createTickSound();
-                    // Pointer tick animation
-                    const pointer = document.querySelector('.wheel-pointer');
-                    pointer.classList.remove('ticking');
-                    void pointer.offsetWidth; // force reflow
-                    pointer.classList.add('ticking');
+                    // Pointer tick animation — use transform directly for smoothness
+                    pointer.style.transform = 'translateX(-50%) rotate(6deg)';
+                    requestAnimationFrame(() => {
+                        pointer.style.transform = 'translateX(-50%) rotate(0deg)';
+                    });
                 }
             }
 
@@ -274,7 +316,7 @@
                 const winner = participants[winnerIndex];
 
                 // Show winner with a slight delay for dramatic effect
-                setTimeout(() => showWinner(winner), 400);
+                setTimeout(() => showWinner(winner), 500);
             }
         }
 
@@ -291,8 +333,9 @@
 
     // --- Play Win Sound ---
     function playWinSound() {
+        const audioCtx = getAudioCtx();
+        if (!audioCtx) return;
         try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
 
             notes.forEach((freq, i) => {
@@ -389,4 +432,3 @@
     updateCount();
 
 })();
-

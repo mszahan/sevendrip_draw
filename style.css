@@ -92,22 +92,45 @@ body {
 .header {
     display: flex;
     align-items: center;
-    gap: 20px;
-    padding: 16px 24px;
+    gap: 24px;
+    padding: 18px 28px;
     margin-bottom: 24px;
-    background: var(--bg-panel);
+    background: linear-gradient(135deg, var(--bg-panel) 0%, rgba(233, 69, 96, 0.05) 100%);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
+}
+
+.brand {
+    flex-shrink: 0;
 }
 
 .brand-logo {
-    height: 60px;
+    height: 68px;
     width: auto;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     object-fit: contain;
     background: #fff;
-    padding: 4px 10px;
+    padding: 6px 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: var(--transition);
+}
+
+.brand-logo:hover {
+    transform: scale(1.04);
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.4);
 }
 
 .header-text {
@@ -116,20 +139,61 @@ body {
 
 .title {
     font-family: var(--font-display);
-    font-size: 1.75rem;
+    font-size: 1.8rem;
     font-weight: 700;
     letter-spacing: -0.02em;
-    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+    color: var(--text-primary);
+}
+
+.brand-name {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    font-weight: 900;
 }
 
 .subtitle {
     font-size: 0.9rem;
     color: var(--text-secondary);
-    margin-top: 2px;
+    margin-top: 4px;
     font-weight: 400;
+    letter-spacing: 0.01em;
+}
+
+.header-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.badge-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #2ecc71;
+    letter-spacing: 0.08em;
+    animation: liveFlash 2s ease-in-out infinite;
+}
+
+@keyframes liveFlash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.badge-text {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
 }
 
 /* --- Main Content --- */
@@ -328,10 +392,11 @@ body {
     transform: translateX(-50%);
     z-index: 10;
     filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
-    animation: none;
+    transition: transform 0.06s ease-out;
 }
 
 .wheel-pointer.ticking {
+    /* Kept for backward compat, now using inline style transitions */
     animation: pointerTick 0.08s ease-in-out;
 }
 
@@ -349,7 +414,9 @@ body {
         0 0 0 8px var(--accent),
         0 0 40px var(--accent-glow),
         var(--shadow-lg);
-    transition: filter 0.3s;
+    transition: box-shadow 0.4s ease;
+    will-change: transform;
+    image-rendering: auto;
 }
 
 .wheel-center {
@@ -579,6 +646,11 @@ body {
     .header {
         flex-direction: column;
         text-align: center;
+    }
+
+    .header-badge {
+        flex-direction: row;
+        gap: 10px;
     }
 }
 
